@@ -1,4 +1,6 @@
 from typing import Optional, Iterable
+import sys, os
+sys.path.appen(os.path.dirname(os.path.abspath(__file__)))
 from platform_methods import subprocess_main
 
 import os.path
