@@ -383,3 +383,5 @@ $RECYCLE.BIN/
 *.lnk
 /ffmpeg-master-latest-linux64-lgpl-godot
 /gdextension_build/scons-cache
+ffmpeg-6
+* copy*

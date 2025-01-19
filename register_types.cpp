@@ -78,6 +78,7 @@ void initialize_ffmpeg_module(ModuleInitializationLevel p_level) {
 	GDREGISTER_ABSTRACT_CLASS(VideoStreamFFMpegLoader);
 	GDREGISTER_CLASS(FFmpegVideoStream);
 	GDREGISTER_INTERNAL_CLASS(FFmpegFrame);
+	GDREGISTER_CLASS(FFmpegVideoStreamPlayer);
 	ffmpeg_loader.instantiate();
 #ifdef GDEXTENSION
 	ResourceLoader::get_singleton()->add_resource_format_loader(ffmpeg_loader);

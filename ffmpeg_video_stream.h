@@ -40,6 +40,10 @@
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/templates/list.hpp>
 #include <godot_cpp/templates/vector.hpp>
+#include <godot_cpp/classes/video_stream_player.hpp>
+#include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/core/object.hpp>
 
 using namespace godot;
 
@@ -119,6 +123,7 @@ class FFmpegVideoStreamPlayback : public VideoStreamPlayback {
 	bool paused = false;
 	bool playing = false;
 	bool just_seeked = false;
+	Ref<VideoStream> stream;
 
 	Ref<YUVGPUConverter> yuv_converter;
 
@@ -138,7 +143,7 @@ private:
 
 protected:
 	void clear();
-	static void _bind_methods() {}; // Required by GDExtension, do not remove
+	static void _bind_methods(); // Required by GDExtension, do not remove
 
 public:
 	Error load(Ref<FileAccess> p_file_access);
@@ -156,13 +161,18 @@ public:
 	STREAM_FUNC_REDIRECT_0_CONST(int, get_mix_rate);
 	STREAM_FUNC_REDIRECT_0_CONST(int, get_channels);
 	FFmpegVideoStreamPlayback();
+	void set_stream(const Ref<VideoStream> &p_stream);
+    Ref<VideoStream> get_stream() const;
+	VideoStreamPlayer *player = nullptr;
+	void set_player(VideoStreamPlayer *p_player);
+    VideoStreamPlayer *get_player() const;
 };
 
 class FFmpegVideoStream : public VideoStream {
 	GDCLASS(FFmpegVideoStream, VideoStream);
 
 protected:
-	static void _bind_methods() {}; // Required by GDExtension, do not remove
+	static void _bind_methods(); // Required by GDExtension, do not remove
 	Ref<VideoStreamPlayback> instantiate_playback_internal() {
 		Ref<FileAccess> fa = FileAccess::open(get_file(), FileAccess::READ);
 		if (!fa.is_valid()) {
@@ -173,11 +183,41 @@ protected:
 		if (pb->load(fa) != OK) {
 			return nullptr;
 		}
+		UtilityFunctions::print("Set Playback1");
+		
+		// playback = pb;
+		playback = pb;
+		if (pb.is_valid()) {
+			// Call the set_stream method with `this` referring to the current VideoStream instance
+			pb->set_stream(this);
+		} else {
+			UtilityFunctions::printerr("Failed to instantiate FFmpegVideoStreamPlayback.");
+		}
+		// *_playback = Object::cast_to<FFmpegVideoStreamPlayback>(playback.ptr());
+		// _playback->set_stream(this);
+		UtilityFunctions::print("Set Playback2");
 		return pb;
 	}
 
 public:
+	VideoStreamPlayer *player = nullptr;
+	// FFmpegVideoStreamPlayback *_playback = nullptr;
+	Ref<FFmpegVideoStreamPlayback> playback;
 	STREAM_FUNC_REDIRECT_0(Ref<VideoStreamPlayback>, instantiate_playback);
+	void set_player(VideoStreamPlayer *p_player);
+    VideoStreamPlayer *get_player() const;
+	
+};
+
+
+class FFmpegVideoStreamPlayer : public VideoStreamPlayer {
+    GDCLASS(FFmpegVideoStreamPlayer, VideoStreamPlayer);
+
+protected:
+    static void _bind_methods();
+
+public:
+    virtual void _ready() override;
 };
 
 #endif // FFMPEG_VIDEO_STREAM_H

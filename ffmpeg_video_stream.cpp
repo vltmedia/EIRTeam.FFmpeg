@@ -41,6 +41,11 @@
 #include <godot_cpp/classes/rd_uniform.hpp>
 #include <godot_cpp/classes/rendering_device.hpp>
 #include <godot_cpp/classes/rendering_server.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/core/object.hpp>
+#include <godot_cpp/core/class_db.hpp>
+
+
 typedef RenderingDevice RD;
 typedef RenderingServer RS;
 typedef RDTextureView RDTextureViewC;
@@ -327,6 +332,23 @@ void FFmpegVideoStreamPlayback::stop_internal() {
 		just_seeked = true;
 		texture.unref();
 	}
+	UtilityFunctions::print("streamState: " , stream.is_valid());
+	if(player == nullptr){
+
+	if (stream.is_valid()) {
+		FFmpegVideoStream *ffmpeg_stream = Object::cast_to<FFmpegVideoStream>(stream.ptr());
+			// Call the set_stream method with `this` referring to the current VideoStream instance
+			player = ffmpeg_stream->get_player();
+			if(player != nullptr){
+			UtilityFunctions::print("playerState Loop: " , player->has_loop());
+			}
+		} else {
+			UtilityFunctions::printerr("Failed to instantiate FFmpegVideoStreamPlayback.");
+		}
+		}
+	else{
+		looping = player->has_loop();
+	}
 	if (yuv_converter.is_valid() && !looping ) {
 		yuv_converter->clear_output_texture();
 	}
@@ -369,6 +391,14 @@ int FFmpegVideoStreamPlayback::get_channels_internal() const {
 }
 
 FFmpegVideoStreamPlayback::FFmpegVideoStreamPlayback() {
+}
+
+void FFmpegVideoStreamPlayback::set_player(VideoStreamPlayer *p_player) {
+	this->player = p_player;
+}
+
+VideoStreamPlayer *FFmpegVideoStreamPlayback::get_player() const {
+	return this->player;
 }
 
 void FFmpegVideoStreamPlayback::clear() {
@@ -645,4 +675,74 @@ void YUVGPUConverter::clear_output_texture() {
 
 YUVGPUConverter::YUVGPUConverter() {
 	out_texture.instantiate();
+}
+
+void FFmpegVideoStream::_bind_methods() {
+ClassDB::bind_method(D_METHOD("set_player", "player"), &FFmpegVideoStream::set_player);
+    ClassDB::bind_method(D_METHOD("get_player"), &FFmpegVideoStream::get_player);
+    // ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "player", PROPERTY_HINT_NODE_TYPE, "VideoStreamPlayer"), "set_player", "get_player");
+
+}
+
+void FFmpegVideoStream::set_player(VideoStreamPlayer *p_player) {
+    if (p_player) {
+        this->player = p_player; // Assign the player only if it's valid
+    } else {
+        UtilityFunctions::printerr("Attempted to set a null player.");
+    }
+}
+
+VideoStreamPlayer *FFmpegVideoStream::get_player() const {
+    if (this->player) {
+        return this->player; // Return the player if valid
+    }
+    UtilityFunctions::printerr("Player is null.");
+    return nullptr;
+}
+void FFmpegVideoStreamPlayback::_bind_methods() {
+    ClassDB::bind_method(D_METHOD("set_stream", "stream"), &FFmpegVideoStreamPlayback::set_stream);
+    ClassDB::bind_method(D_METHOD("get_stream"), &FFmpegVideoStreamPlayback::get_stream);
+    ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "stream", PROPERTY_HINT_RESOURCE_TYPE, "VideoStream"), "set_stream", "get_stream");
+
+}
+void FFmpegVideoStreamPlayback::set_stream(const Ref<VideoStream> &p_stream) {
+    this->stream = p_stream;
+}
+
+Ref<VideoStream> FFmpegVideoStreamPlayback::get_stream() const {
+    return this->stream;
+}
+
+
+
+
+void FFmpegVideoStreamPlayer::_bind_methods() {
+    // No additional methods to bind for now
+}
+
+void FFmpegVideoStreamPlayer::_ready() {
+    // Ensure the stream is of type FFmpegVideoStreamPlayback
+    Ref<VideoStream> stream = get_stream();
+	UtilityFunctions::print("FFmpegVideoStreamPlayer 1");
+    if (stream.is_valid()) {
+	UtilityFunctions::print("FFmpegVideoStreamPlayer 2");
+
+        FFmpegVideoStream *_stream = Object::cast_to<FFmpegVideoStream>(stream.ptr());
+	UtilityFunctions::print("FFmpegVideoStreamPlayer 3");
+
+        if (_stream) {
+	UtilityFunctions::print("FFmpegVideoStreamPlayer 4");
+
+            _stream->set_player(this); 
+	UtilityFunctions::print("FFmpegVideoStreamPlayer 5");
+
+		// FFmpegVideoStreamPlayback *_playback = Object::cast_to<FFmpegVideoStreamPlayback>(_stream->playback.ptr());
+		// 	_playback->set_loop(has_loop());
+            UtilityFunctions::print("FFmpegVideoStreamPlayer set itself as the player for the stream.");
+        } else {
+            UtilityFunctions::printerr("Stream is not of type FFmpegVideoStreamPlayback.");
+        }
+    } else {
+        UtilityFunctions::printerr("No stream set for FFmpegVideoStreamPlayer.");
+    }
 }
