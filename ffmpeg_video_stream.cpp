@@ -327,7 +327,7 @@ void FFmpegVideoStreamPlayback::stop_internal() {
 		just_seeked = true;
 		texture.unref();
 	}
-	if (yuv_converter.is_valid()) {
+	if (yuv_converter.is_valid() && !looping ) {
 		yuv_converter->clear_output_texture();
 	}
 	playing = false;
